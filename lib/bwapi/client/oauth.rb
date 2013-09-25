@@ -3,6 +3,18 @@ module BWAPI
     # OAuth module for oauth/token endpoint
     module OAuth
 
+      # Determines grant-type used for client
+      #
+      # @return [String] relevant grant type for client
+      def determine_grant_type
+        case client_id
+        when 'brandwatch-api-client'
+          grant_type ? grant_type : 'api-password'
+        else
+          grant_type ? grant_type : 'password'
+        end
+      end
+
       # Authenticate a user
       #
       # @param opts [Hash] options hash of parameters
@@ -16,7 +28,7 @@ module BWAPI
         opts = {
           username: username,
           password: password,
-          grant_type: grant_type ? grant_type : 'password',
+          grant_type: determine_grant_type,
           client_secret: client_secret,
           client_id: client_id,
           force_urlencoded: true
@@ -36,10 +48,12 @@ module BWAPI
       # @option opts [String] client_id Client id
       # @option opts [String] force_urlencoded Force urlencoded
       def oauth_refresh_token opts={}
+
+        raise "brandwatch-api-client type is unable to refresh access token" if api_client?
+
         opts = {
           username: username,
           password: password,
-
           refresh_token: refresh_token,
           grant_type: 'refresh_token',
           client_id: client_id,
@@ -50,9 +64,9 @@ module BWAPI
       end
       alias :refresh :oauth_refresh_token
 
-      # Sends a oauth request
+      # Sends a oauth post request
       #
-      # @param opts [Hash] options hash of parameters
+      # @param opts [Boolean] boolean result of request
       def oauth_request opts
         begin
           creds = post 'oauth/token', opts
